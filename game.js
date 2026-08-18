@@ -195,6 +195,83 @@ function updateCombatUI() {
 
 
 /* =========================
+   FLOATING TEXT
+========================= */
+
+function showFloatingText(
+  target,
+  text,
+  className
+) {
+
+  const floating =
+    document.createElement(
+      "div"
+    );
+
+
+  floating.className =
+    "floating-text " +
+    className;
+
+
+  floating.textContent =
+    text;
+
+
+  target.appendChild(
+    floating
+  );
+
+
+  setTimeout(
+    function () {
+
+      floating.remove();
+
+    },
+    900
+  );
+}
+
+
+/* =========================
+   TURN BANNER
+========================= */
+
+function showEnemyTurnBanner() {
+
+  const banner =
+    document.createElement(
+      "div"
+    );
+
+
+  banner.className =
+    "turn-banner";
+
+
+  banner.textContent =
+    "ENEMY TURN";
+
+
+  document.body.appendChild(
+    banner
+  );
+
+
+  setTimeout(
+    function () {
+
+      banner.remove();
+
+    },
+    800
+  );
+}
+
+
+/* =========================
    NEW FIGHT
 ========================= */
 
@@ -302,6 +379,9 @@ function createBoard() {
 
 
   selected = null;
+
+
+  ensurePlayableBoard();
 
 
   messageEl.textContent =
@@ -792,6 +872,15 @@ async function attemptSwap(
   }
 
 
+  await ensurePlayableBoardAnimated();
+
+
+  if (gameOver) {
+
+    return;
+  }
+
+
   await enemyTurn();
 
 
@@ -1155,6 +1244,13 @@ function applyMatchEffects(
     );
 
 
+    showFloatingText(
+      enemyCard,
+      "-" + totalDamage,
+      "damage-text"
+    );
+
+
     battleMessageEl.textContent =
 
       "You deal " +
@@ -1204,6 +1300,18 @@ function applyMatchEffects(
     playerCard.classList.add(
       "heal"
     );
+
+
+    if (
+      actualHeal > 0
+    ) {
+
+      showFloatingText(
+        playerCard,
+        "+" + actualHeal,
+        "heal-text"
+      );
+    }
 
 
     if (
@@ -1429,6 +1537,283 @@ function refillBoard() {
 
 
 /* =========================
+   VALID MOVE CHECK
+========================= */
+
+function hasValidMove() {
+
+  for (
+    let row = 0;
+    row < ROWS;
+    row++
+  ) {
+
+    for (
+      let col = 0;
+      col < COLS;
+      col++
+    ) {
+
+      if (
+        col + 1 < COLS
+      ) {
+
+        const a = {
+          row: row,
+          col: col
+        };
+
+        const b = {
+          row: row,
+          col: col + 1
+        };
+
+
+        swapTiles(
+          a,
+          b
+        );
+
+
+        const createsMatch =
+          findMatches().size > 0;
+
+
+        swapTiles(
+          a,
+          b
+        );
+
+
+        if (
+          createsMatch
+        ) {
+
+          return true;
+        }
+      }
+
+
+      if (
+        row + 1 < ROWS
+      ) {
+
+        const a = {
+          row: row,
+          col: col
+        };
+
+        const b = {
+          row: row + 1,
+          col: col
+        };
+
+
+        swapTiles(
+          a,
+          b
+        );
+
+
+        const createsMatch =
+          findMatches().size > 0;
+
+
+        swapTiles(
+          a,
+          b
+        );
+
+
+        if (
+          createsMatch
+        ) {
+
+          return true;
+        }
+      }
+    }
+  }
+
+
+  return false;
+}
+
+
+/* =========================
+   SHUFFLE BOARD
+========================= */
+
+function shuffleBoard() {
+
+  const values = [];
+
+
+  for (
+    let row = 0;
+    row < ROWS;
+    row++
+  ) {
+
+    for (
+      let col = 0;
+      col < COLS;
+      col++
+    ) {
+
+      values.push(
+        board[row][col]
+      );
+    }
+  }
+
+
+  for (
+    let i = values.length - 1;
+    i > 0;
+    i--
+  ) {
+
+    const j =
+      Math.floor(
+        Math.random() *
+        (i + 1)
+      );
+
+
+    const temp =
+      values[i];
+
+
+    values[i] =
+      values[j];
+
+
+    values[j] =
+      temp;
+  }
+
+
+  let index = 0;
+
+
+  for (
+    let row = 0;
+    row < ROWS;
+    row++
+  ) {
+
+    for (
+      let col = 0;
+      col < COLS;
+      col++
+    ) {
+
+      board[row][col] =
+        values[index];
+
+
+      index++;
+    }
+  }
+}
+
+
+/* =========================
+   GUARANTEE PLAYABLE BOARD
+========================= */
+
+function ensurePlayableBoard() {
+
+  let safety = 0;
+
+
+  while (
+    (
+      findMatches().size > 0 ||
+      !hasValidMove()
+    )
+    &&
+    safety < 200
+  ) {
+
+    shuffleBoard();
+
+    safety++;
+  }
+
+
+  if (
+    !hasValidMove()
+  ) {
+
+    createBoard();
+  }
+}
+
+
+/* =========================
+   ANIMATED RESHUFFLE
+========================= */
+
+async function ensurePlayableBoardAnimated() {
+
+  if (
+    hasValidMove()
+  ) {
+
+    return;
+  }
+
+
+  messageEl.textContent =
+    "No moves — reshuffling!";
+
+
+  battleMessageEl.textContent =
+    "Board reshuffle";
+
+
+  boardEl.classList.add(
+    "reshuffle"
+  );
+
+
+  await wait(450);
+
+
+  let safety = 0;
+
+
+  do {
+
+    shuffleBoard();
+
+    safety++;
+
+  } while (
+    (
+      findMatches().size > 0 ||
+      !hasValidMove()
+    )
+    &&
+    safety < 200
+  );
+
+
+  boardEl.classList.remove(
+    "reshuffle"
+  );
+
+
+  renderBoard();
+
+
+  await wait(350);
+}
+
+
+//* =========================
    ENEMY TURN
 ========================= */
 
@@ -1437,11 +1822,40 @@ async function enemyTurn() {
   locked = true;
 
 
+  showEnemyTurnBanner();
+
+
   battleMessageEl.textContent =
-    "Goblin attacks!";
+    "Goblin prepares to attack!";
 
 
-  await wait(450);
+  await wait(500);
+
+
+  enemyCard.classList.remove(
+    "enemy-lunge"
+  );
+
+
+  enemyCard.classList.remove(
+    "enemy-flash"
+  );
+
+
+  void enemyCard.offsetWidth;
+
+
+  enemyCard.classList.add(
+    "enemy-lunge"
+  );
+
+
+  enemyCard.classList.add(
+    "enemy-flash"
+  );
+
+
+  await wait(300);
 
 
   const enemyDamage =
@@ -1452,11 +1866,14 @@ async function enemyTurn() {
     enemyDamage;
 
 
+  let blocked = 0;
+
+
   if (
     playerShield > 0
   ) {
 
-    const blocked =
+    blocked =
       Math.min(
 
         playerShield,
@@ -1472,6 +1889,18 @@ async function enemyTurn() {
 
     damageLeft -=
       blocked;
+  }
+
+
+  if (
+    blocked > 0
+  ) {
+
+    showFloatingText(
+      playerCard,
+      "BLOCK " + blocked,
+      "block-text"
+    );
   }
 
 
@@ -1496,19 +1925,62 @@ async function enemyTurn() {
     );
 
 
+    playerCard.classList.remove(
+      "player-hit-flash"
+    );
+
+
     void playerCard.offsetWidth;
 
 
     playerCard.classList.add(
       "hurt"
     );
+
+
+    playerCard.classList.add(
+      "player-hit-flash"
+    );
+
+
+    showFloatingText(
+      playerCard,
+      "-" + damageLeft,
+      "damage-text"
+    );
+
+
+    battleMessageEl.textContent =
+      "Goblin hits for " +
+      damageLeft +
+      " damage!";
+
+  } else {
+
+    battleMessageEl.textContent =
+      "Your shield blocks the attack!";
   }
 
 
   updateCombatUI();
 
 
-  await wait(350);
+  await wait(650);
+
+
+  enemyCard.classList.remove(
+    "enemy-lunge"
+  );
+
+
+  enemyCard.classList.remove(
+    "enemy-flash"
+  );
+
+
+  playerCard.classList.remove(
+    "player-hit-flash"
+  );
 
 
   if (
