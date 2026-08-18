@@ -46,4 +46,841 @@
     margin-bottom: 6px;
     font-weight: bold;
     font-size: 22px;
-    color
+    color: #ffd966;
+    transform: scale(1);
+    transition: transform 0.15s ease;
+  }
+
+  #combo.pop {
+    transform: scale(1.25);
+  }
+
+  #board {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    padding: 8px;
+
+    background: rgba(255,255,255,0.06);
+    border: 2px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+
+    box-shadow:
+      0 15px 40px rgba(0,0,0,0.45),
+      inset 0 0 30px rgba(255,255,255,0.03);
+  }
+
+  .tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 14px;
+    font-size: clamp(26px, 8vw, 48px);
+    cursor: pointer;
+    user-select: none;
+
+    border: 2px solid rgba(255,255,255,0.12);
+    box-shadow:
+      inset 0 3px 8px rgba(255,255,255,0.15),
+      0 4px 7px rgba(0,0,0,0.25);
+
+    transition:
+      transform 0.15s ease,
+      opacity 0.18s ease,
+      filter 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .tile:active {
+    transform: scale(0.92);
+  }
+
+  .tile.selected {
+    transform: scale(0.88);
+    box-shadow:
+      0 0 0 4px #ffffff,
+      0 0 20px rgba(255,255,255,0.8);
+    z-index: 5;
+  }
+
+  .tile.sword {
+    background: linear-gradient(145deg, #6d737e, #30343c);
+  }
+
+  .tile.magic {
+    background: linear-gradient(145deg, #ff714f, #8e241d);
+  }
+
+  .tile.shield {
+    background: linear-gradient(145deg, #4d8dff, #213d8f);
+  }
+
+  .tile.heart {
+    background: linear-gradient(145deg, #ff5c86, #9d2047);
+  }
+
+  .tile.matched {
+    animation: matchPop 0.25s forwards;
+  }
+
+  @keyframes matchPop {
+    0% {
+      transform: scale(1);
+      filter: brightness(1);
+    }
+
+    45% {
+      transform: scale(1.28);
+      filter: brightness(2);
+    }
+
+    100% {
+      transform: scale(0);
+      opacity: 0;
+    }
+  }
+
+  #message {
+    min-height: 30px;
+    margin-top: 14px;
+    font-size: 15px;
+    color: #cad1e5;
+  }
+
+  #reset {
+    margin-top: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+
+    background: #ffffff;
+    color: #121622;
+
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  #reset:active {
+    transform: scale(0.96);
+  }
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+  <h1>⚔️ Match RPG</h1>
+
+  <div id="subtitle">
+    Prototype 1 — matching sandbox
+  </div>
+
+  <div id="combo"></div>
+
+  <div id="board"></div>
+
+  <div id="message">
+    Tap one tile, then an adjacent tile.
+  </div>
+
+  <button id="reset">
+    New Board
+  </button>
+
+</div>
+
+<script>
+
+const ROWS = 6;
+const COLS = 6;
+
+const TYPES = [
+  {
+    id: "sword",
+    emoji: "⚔️"
+  },
+  {
+    id: "magic",
+    emoji: "🔥"
+  },
+  {
+    id: "shield",
+    emoji: "🛡️"
+  },
+  {
+    id: "heart",
+    emoji: "❤️"
+  }
+];
+
+let board = [];
+
+let selected = null;
+
+let locked = false;
+
+let comboCount = 0;
+
+const boardEl = document.getElementById("board");
+const messageEl = document.getElementById("message");
+const comboEl = document.getElementById("combo");
+const resetBtn = document.getElementById("reset");
+
+
+// ============================================================
+// RANDOM TILE
+// ============================================================
+
+function randomType() {
+
+  return Math.floor(Math.random() * TYPES.length);
+
+}
+
+
+// ============================================================
+// CREATE STARTING BOARD
+// Prevent automatic matches when generating.
+// ============================================================
+
+function createBoard() {
+
+  board = [];
+
+  for (let row = 0; row < ROWS; row++) {
+
+    board[row] = [];
+
+    for (let col = 0; col < COLS; col++) {
+
+      let type;
+
+      do {
+
+        type = randomType();
+
+      } while (
+
+        // Prevent horizontal starting match
+
+        (
+          col >= 2 &&
+          board[row][col - 1] === type &&
+          board[row][col - 2] === type
+        )
+
+        ||
+
+        // Prevent vertical starting match
+
+        (
+          row >= 2 &&
+          board[row - 1][col] === type &&
+          board[row - 2][col] === type
+        )
+
+      );
+
+      board[row][col] = type;
+
+    }
+
+  }
+
+  selected = null;
+
+  comboCount = 0;
+
+  comboEl.textContent = "";
+
+  messageEl.textContent =
+    "Tap one tile, then an adjacent tile.";
+
+  renderBoard();
+
+}
+
+
+// ============================================================
+// DRAW BOARD
+// ============================================================
+
+function renderBoard() {
+
+  boardEl.innerHTML = "";
+
+  for (let row = 0; row < ROWS; row++) {
+
+    for (let col = 0; col < COLS; col++) {
+
+      const value = board[row][col];
+
+      const tile = document.createElement("div");
+
+      tile.classList.add("tile");
+
+      tile.dataset.row = row;
+      tile.dataset.col = col;
+
+      if (value !== null) {
+
+        const type = TYPES[value];
+
+        tile.classList.add(type.id);
+
+        tile.textContent = type.emoji;
+
+      }
+
+      if (
+        selected &&
+        selected.row === row &&
+        selected.col === col
+      ) {
+
+        tile.classList.add("selected");
+
+      }
+
+      tile.addEventListener("click", () => {
+
+        tileClicked(row, col);
+
+      });
+
+      boardEl.appendChild(tile);
+
+    }
+
+  }
+
+}
+
+
+// ============================================================
+// TILE CLICK
+// ============================================================
+
+function tileClicked(row, col) {
+
+  if (locked) return;
+
+  if (!selected) {
+
+    selected = { row, col };
+
+    messageEl.textContent =
+      "Now choose an adjacent tile.";
+
+    renderBoard();
+
+    return;
+
+  }
+
+
+  // Clicking selected tile again cancels.
+
+  if (
+    selected.row === row &&
+    selected.col === col
+  ) {
+
+    selected = null;
+
+    messageEl.textContent =
+      "Selection cancelled.";
+
+    renderBoard();
+
+    return;
+
+  }
+
+
+  // If not adjacent, simply change selection.
+
+  if (!areAdjacent(
+    selected.row,
+    selected.col,
+    row,
+    col
+  )) {
+
+    selected = { row, col };
+
+    messageEl.textContent =
+      "Choose an adjacent tile.";
+
+    renderBoard();
+
+    return;
+
+  }
+
+
+  const first = selected;
+
+  const second = { row, col };
+
+  selected = null;
+
+  attemptSwap(first, second);
+
+}
+
+
+// ============================================================
+// ADJACENCY
+// ============================================================
+
+function areAdjacent(r1, c1, r2, c2) {
+
+  const distance =
+    Math.abs(r1 - r2) +
+    Math.abs(c1 - c2);
+
+  return distance === 1;
+
+}
+
+
+// ============================================================
+// SWAP
+// ============================================================
+
+function swapTiles(a, b) {
+
+  const temp = board[a.row][a.col];
+
+  board[a.row][a.col] =
+    board[b.row][b.col];
+
+  board[b.row][b.col] =
+    temp;
+
+}
+
+
+// ============================================================
+// TRY SWAP
+// ============================================================
+
+async function attemptSwap(first, second) {
+
+  locked = true;
+
+  swapTiles(first, second);
+
+  renderBoard();
+
+  await wait(170);
+
+  const matches = findMatches();
+
+
+  // Invalid swap.
+
+  if (matches.size === 0) {
+
+    messageEl.textContent =
+      "No match!";
+
+    await wait(160);
+
+    swapTiles(first, second);
+
+    renderBoard();
+
+    await wait(150);
+
+    messageEl.textContent =
+      "Try another move.";
+
+    locked = false;
+
+    return;
+
+  }
+
+
+  comboCount = 0;
+
+  await resolveBoard();
+
+  locked = false;
+
+}
+
+
+// ============================================================
+// FIND ALL MATCHES
+// ============================================================
+
+function findMatches() {
+
+  const matched = new Set();
+
+
+  // Horizontal matches
+
+  for (let row = 0; row < ROWS; row++) {
+
+    let start = 0;
+
+    for (let col = 1; col <= COLS; col++) {
+
+      const current =
+        col < COLS
+          ? board[row][col]
+          : null;
+
+      const previous =
+        board[row][col - 1];
+
+      if (current !== previous) {
+
+        const length =
+          col - start;
+
+        if (
+          previous !== null &&
+          length >= 3
+        ) {
+
+          for (
+            let x = start;
+            x < col;
+            x++
+          ) {
+
+            matched.add(
+              `${row},${x}`
+            );
+
+          }
+
+        }
+
+        start = col;
+
+      }
+
+    }
+
+  }
+
+
+  // Vertical matches
+
+  for (let col = 0; col < COLS; col++) {
+
+    let start = 0;
+
+    for (let row = 1; row <= ROWS; row++) {
+
+      const current =
+        row < ROWS
+          ? board[row][col]
+          : null;
+
+      const previous =
+        board[row - 1][col];
+
+      if (current !== previous) {
+
+        const length =
+          row - start;
+
+        if (
+          previous !== null &&
+          length >= 3
+        ) {
+
+          for (
+            let y = start;
+            y < row;
+            y++
+          ) {
+
+            matched.add(
+              `${y},${col}`
+            );
+
+          }
+
+        }
+
+        start = row;
+
+      }
+
+    }
+
+  }
+
+
+  return matched;
+
+}
+
+
+// ============================================================
+// RESOLVE MATCHES / CASCADES
+// ============================================================
+
+async function resolveBoard() {
+
+  while (true) {
+
+    const matches = findMatches();
+
+    if (matches.size === 0) {
+
+      break;
+
+    }
+
+    comboCount++;
+
+    showCombo();
+
+    messageEl.textContent =
+      `${matches.size} tiles matched!`;
+
+    animateMatches(matches);
+
+    await wait(280);
+
+    clearMatches(matches);
+
+    collapseBoard();
+
+    refillBoard();
+
+    renderBoard();
+
+    await wait(320);
+
+  }
+
+  if (comboCount > 1) {
+
+    messageEl.textContent =
+      `${comboCount}x cascade!`;
+
+  } else {
+
+    messageEl.textContent =
+      "Nice match.";
+
+  }
+
+  await wait(600);
+
+  comboEl.textContent = "";
+
+  messageEl.textContent =
+    "Your move.";
+
+}
+
+
+// ============================================================
+// MATCH ANIMATION
+// ============================================================
+
+function animateMatches(matches) {
+
+  const tiles =
+    boardEl.querySelectorAll(".tile");
+
+  matches.forEach(key => {
+
+    const [row, col] =
+      key.split(",").map(Number);
+
+    const index =
+      row * COLS + col;
+
+    const tile =
+      tiles[index];
+
+    if (tile) {
+
+      tile.classList.add("matched");
+
+    }
+
+  });
+
+}
+
+
+// ============================================================
+// CLEAR MATCHES
+// ============================================================
+
+function clearMatches(matches) {
+
+  matches.forEach(key => {
+
+    const [row, col] =
+      key.split(",").map(Number);
+
+    board[row][col] =
+      null;
+
+  });
+
+}
+
+
+// ============================================================
+// COLLAPSE TILES DOWNWARD
+// ============================================================
+
+function collapseBoard() {
+
+  for (let col = 0; col < COLS; col++) {
+
+    const remaining = [];
+
+    for (
+      let row = ROWS - 1;
+      row >= 0;
+      row--
+    ) {
+
+      if (board[row][col] !== null) {
+
+        remaining.push(
+          board[row][col]
+        );
+
+      }
+
+    }
+
+
+    for (
+      let row = ROWS - 1;
+      row >= 0;
+      row--
+    ) {
+
+      if (remaining.length > 0) {
+
+        board[row][col] =
+          remaining.shift();
+
+      } else {
+
+        board[row][col] =
+          null;
+
+      }
+
+    }
+
+  }
+
+}
+
+
+// ============================================================
+// REFILL EMPTY SPACES
+// ============================================================
+
+function refillBoard() {
+
+  for (let row = 0; row < ROWS; row++) {
+
+    for (let col = 0; col < COLS; col++) {
+
+      if (board[row][col] === null) {
+
+        board[row][col] =
+          randomType();
+
+      }
+
+    }
+
+  }
+
+}
+
+
+// ============================================================
+// COMBO DISPLAY
+// ============================================================
+
+function showCombo() {
+
+  if (comboCount === 1) {
+
+    comboEl.textContent =
+      "MATCH!";
+
+  } else {
+
+    comboEl.textContent =
+      `COMBO ×${comboCount}!`;
+
+  }
+
+  comboEl.classList.remove("pop");
+
+  void comboEl.offsetWidth;
+
+  comboEl.classList.add("pop");
+
+}
+
+
+// ============================================================
+// WAIT
+// ============================================================
+
+function wait(ms) {
+
+  return new Promise(resolve =>
+    setTimeout(resolve, ms)
+  );
+
+}
+
+
+// ============================================================
+// RESET
+// ============================================================
+
+resetBtn.addEventListener(
+  "click",
+  () => {
+
+    if (locked) return;
+
+    createBoard();
+
+  }
+);
+
+
+// ============================================================
+// START GAME
+// ============================================================
+
+createBoard();
+
+</script>
+
+</body>
+</html>
