@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>Match RPG Prototype</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at top, #28304a 0%, #121622 55%, #090b11 100%);
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  #game {
+    width: min(94vw, 520px);
+    text-align: center;
+  }
+
+  h1 {
+    margin: 0 0 6px;
+    font-size: clamp(24px, 7vw, 38px);
+  }
+
+  #subtitle {
+    margin-bottom: 18px;
+    color: #aeb7d1;
+    font-size: 14px;
+  }
+
+  #combo {
+    height: 32px;
+    margin-bottom: 6px;
+    font-weight: bold;
+    font-size: 22px;
+    color
