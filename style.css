@@ -23,6 +23,8 @@ body {
   padding: 12px 0 24px;
 
   text-align: center;
+
+  position: relative;
 }
 
 h1 {
@@ -54,6 +56,10 @@ h1 {
   padding: 10px;
 
   min-height: 130px;
+
+  position: relative;
+
+  overflow: visible;
 }
 
 .portrait {
@@ -336,5 +342,250 @@ button:active {
 
   100% {
     transform: scale(1);
+  }
+}
+
+
+/* =========================
+   ENEMY ATTACK
+========================= */
+
+.enemy-lunge {
+  animation: enemyLunge 0.5s ease;
+}
+
+@keyframes enemyLunge {
+
+  0% {
+    transform: translateX(0) scale(1);
+  }
+
+  35% {
+    transform: translateX(-22px) scale(1.06);
+  }
+
+  55% {
+    transform: translateX(-30px) scale(1.08);
+  }
+
+  100% {
+    transform: translateX(0) scale(1);
+  }
+}
+
+
+.enemy-flash {
+  animation: enemyFlash 0.5s ease;
+}
+
+@keyframes enemyFlash {
+
+  0% {
+    filter: brightness(1);
+  }
+
+  35% {
+    filter: brightness(1.8);
+  }
+
+  60% {
+    filter: brightness(1.3);
+  }
+
+  100% {
+    filter: brightness(1);
+  }
+}
+
+
+.player-hit-flash {
+  animation: playerHitFlash 0.4s ease;
+}
+
+@keyframes playerHitFlash {
+
+  0% {
+    box-shadow: none;
+  }
+
+  40% {
+    box-shadow:
+      0 0 0 3px rgba(255, 80, 80, 0.9),
+      0 0 24px rgba(255, 80, 80, 0.8);
+  }
+
+  100% {
+    box-shadow: none;
+  }
+}
+
+
+/* =========================
+   FLOATING COMBAT TEXT
+========================= */
+
+.floating-text {
+  position: absolute;
+
+  left: 50%;
+
+  top: 18px;
+
+  transform: translateX(-50%);
+
+  z-index: 20;
+
+  pointer-events: none;
+
+  font-weight: bold;
+
+  font-size: 24px;
+
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.9);
+
+  animation: floatCombatText 0.9s ease forwards;
+}
+
+.damage-text {
+  color: #ff7676;
+}
+
+.block-text {
+  color: #72b8ff;
+}
+
+.heal-text {
+  color: #84f2a1;
+}
+
+@keyframes floatCombatText {
+
+  0% {
+    opacity: 0;
+
+    transform:
+      translateX(-50%)
+      translateY(12px)
+      scale(0.8);
+  }
+
+  20% {
+    opacity: 1;
+
+    transform:
+      translateX(-50%)
+      translateY(0)
+      scale(1.1);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform:
+      translateX(-50%)
+      translateY(-36px)
+      scale(1);
+  }
+}
+
+
+/* =========================
+   ENEMY TURN BANNER
+========================= */
+
+.turn-banner {
+  position: fixed;
+
+  left: 50%;
+
+  top: 28%;
+
+  transform:
+    translateX(-50%)
+    scale(0.8);
+
+  z-index: 100;
+
+  padding: 12px 22px;
+
+  border-radius: 14px;
+
+  background:
+    rgba(120, 20, 20, 0.95);
+
+  color: white;
+
+  font-size: 24px;
+
+  font-weight: bold;
+
+  letter-spacing: 1px;
+
+  pointer-events: none;
+
+  animation: turnBanner 0.8s ease forwards;
+}
+
+@keyframes turnBanner {
+
+  0% {
+    opacity: 0;
+
+    transform:
+      translateX(-50%)
+      scale(0.8);
+  }
+
+  20% {
+    opacity: 1;
+
+    transform:
+      translateX(-50%)
+      scale(1.08);
+  }
+
+  75% {
+    opacity: 1;
+
+    transform:
+      translateX(-50%)
+      scale(1);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform:
+      translateX(-50%)
+      scale(0.95);
+  }
+}
+
+
+/* =========================
+   RESHUFFLE
+========================= */
+
+.reshuffle {
+  animation: reshufflePulse 0.5s ease;
+}
+
+@keyframes reshufflePulse {
+
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(0.97);
+
+    filter: brightness(1.4);
+  }
+
+  100% {
+    transform: scale(1);
+
+    filter: brightness(1);
   }
 }
